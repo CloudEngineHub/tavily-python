@@ -16,6 +16,36 @@ class TavilyHybridClient():
         self.embeddings_field = embeddings_field
         self.content_field = content_field
         self.embedding_function = embed_openai
+        
+        # Check that the index specified by the parameters exists and is a valid vector search index
+        index_exists = False
+        for index in collection.list_search_indexes():
+            if index['name'] != self.index:
+                continue
+            
+            if index['type'] != 'vectorSearch':
+                raise ValueError(f"Index '{self.index}' exists but is not of type 'vectorSearch'.")
+            
+            field_exists = False
+            for field in index['latestDefinition']['fields']:
+                if field['path'] != self.embeddings_field:
+                    continue
+                
+                if field['type'] != 'vector':
+                    raise ValueError(f"Field '{self.embeddings_field}' exists but is not of type 'vector'.")
+                elif field['similarity'] != 'cosine':
+                    raise ValueError(f"Field '{self.embeddings_field}' exists but has similarity '{field['similarity']}' instead of 'cosine'.")
+                
+                field_exists = True
+                break
+            
+            if not field_exists:
+                raise ValueError(f"Field '{self.embeddings_field}' does not exist in index '{self.index}'.")
+            
+            index_exists = True
+            
+        if not index_exists:
+            raise ValueError(f"Index '{self.index}' does not exist.")
 
     def search(self, query, max_results=10, max_local=None, max_foreign=None, save_foreign=False):
         '''
@@ -63,9 +93,6 @@ class TavilyHybridClient():
         foreign_results = [
             {'content': result['content'], 'score': result['score']} for result in self.tavily.search(query, max_results=max_foreign)['results']
         ] if max_foreign > 0 else []
-
-        print(local_results)
-        print(foreign_results)
 
         # Combine the results
         combined_results = local_results + foreign_results

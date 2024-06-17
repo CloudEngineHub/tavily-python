@@ -15,6 +15,6 @@ hybrid_search = TavilyHybridClient(
     content_field='content'
 )
 
-results = hybrid_search.search("Who is Leo Messi?", max_results=5, max_foreign=1, max_local=1, save_foreign=True)
+results = hybrid_search.search("Who is Leo Messi?", max_results=5, max_local=123123, max_foreign=14, save_foreign=True)
 
 print(results)
